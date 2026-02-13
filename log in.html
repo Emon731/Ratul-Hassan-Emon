@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ratul Hassan Emon | log in</title>
-        <link rel="icon" type="image/png" href="ikn.png">
+    <link rel="icon" type="image/png" href="ikn.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -56,6 +56,7 @@
         }
 
         h2 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: -0.5px; }
+        h3 { margin-bottom: 0.5rem; }
         .subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 2rem; }
 
         .input-group { margin-bottom: 1.25rem; }
@@ -176,10 +177,10 @@
         <p class="subtitle">This is your log in page.</p>
         
         <div class="input-group">
-            <input type="email" placeholder="Email Address">
+            <input type="email" id="login-email" placeholder="Email Address">
         </div>
         <div class="input-group">
-            <input type="password" placeholder="Password">
+            <input type="password" id="login-password" placeholder="Password">
         </div>
         
         <button class="btn btn-main" onclick="handleAuth()">
@@ -187,16 +188,6 @@
         </button>
         
         <div class="divider">Continue with</div>
-        
-        <div class="social-grid">
-            <button class="btn btn-social" onclick="socialLogin('Google')">
-                <i class="fa-brands fa-google"></i> Google
-            </button>
-            <button class="btn btn-social" onclick="socialLogin('Facebook')">
-                <i class="fa-brands fa-facebook"></i> Facebook
-            </button>
-        </div>
-
         <p class="toggle-footer">New user? <span onclick="toggleAuth()">Initialize Account</span></p>
     </div>
 
@@ -205,9 +196,8 @@
         <p class="subtitle">Create your unique identifier below.</p>
         
         <div class="input-group"><input type="text" placeholder="Full Name"></div>
-        <div class="input-group"><input type="text" placeholder="Phone Number"></div>
-        <div class="input-group"><input type="email" placeholder="Email Address"></div>
-        <div class="input-group"><input type="password" placeholder="Password"></div>
+        <div class="input-group"><input type="email" id="reg-email" placeholder="Email Address"></div>
+        <div class="input-group"><input type="password" id="reg-password" placeholder="Password"></div>
         
         <button class="btn btn-main" onclick="handleAuth()">
             Create Account <i class="fa-solid fa-user-plus"></i>
@@ -218,22 +208,47 @@
 </div>
 
 <script>
-    function toggleAuth() {
-        const loginBox = document.getElementById('login-box');
-        const registerBox = document.getElementById('register-box');
-        loginBox.classList.toggle('hidden');
-        registerBox.classList.toggle('hidden');
-    }
+        if (localStorage.getItem('token')) {
+            window.location.href = "dashboard.html";
+        }
 
-    function handleAuth() {
-        alert("Authentication Successful.");
-        window.location.href = "#"; 
-    }
+        function toggleAuth() {
+            document.getElementById('login-box').classList.toggle('hidden');
+            document.getElementById('register-box').classList.toggle('hidden');
+        }
 
-    function socialLogin(platform) {
-        alert("Initiating secure handshake with " + platform + "...");
-    }
-</script>
+        async function handleAuth() {
+            const isRegistering = !document.getElementById('register-box').classList.contains('hidden');
+            const email = isRegistering ? document.getElementById('reg-email').value : document.getElementById('login-email').value;
+            const password = isRegistering ? document.getElementById('reg-password').value : document.getElementById('login-password').value;
+
+            if (!email || !password) return alert("Please fill in all fields!");
+
+            const endpoint = isRegistering ? '/register' : '/login';
+            try {
+                const response = await fetch(`http://localhost:5000${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    if (isRegistering) {
+                        alert(data.message);
+                        toggleAuth();
+                    } else {
+                        localStorage.setItem('token', data.token);
+                        window.location.href = "dashboard.html";
+                    }
+                } else {
+                    alert("Error: " + data.error);
+                }
+            } catch (err) {
+                alert("Server connection failed!");
+            }
+        }
+    </script>
 
 </body>
 </html>
