@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ratul Hassan Emon | Dashboard</title>
-        <link rel="icon" type="image/png" href="ikn.png">
-
+    <link rel="icon" type="image/png" href="ikn.png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -36,13 +35,40 @@
             padding: 40px;
         }
 
+        /* হেডার এবং লগআউট বাটনের স্টাইল */
+        .header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
         .welcome-msg {
             font-size: clamp(20px, 5vw, 32px);
-            margin-bottom: 40px;
+            margin: 0;
             font-weight: 600;
             background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+
+        .logout-btn {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 8px 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #ef4444;
+            color: white;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
         }
 
         h3 {
@@ -128,14 +154,17 @@
 
         @media (max-width: 600px) {
             .container { padding: 20px; }
-            .welcome-msg { text-align: center; }
+            .header-flex { justify-content: center; text-align: center; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="welcome-msg">Welcome Back, <span id="user-name">User</span>! ✨</div>
+    <div class="header-flex">
+        <div class="welcome-msg">Welcome Back, <span id="user-name">User</span>!</div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
 
     <section>
         <h3>My Courses</h3>
@@ -208,6 +237,15 @@
         }
     };
 
+    // লগআউট ফাংশন
+    function logout() {
+        if(confirm("Are you sure you want to logout?")) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('userEmail');
+            window.location.href = 'index.html';
+        }
+    }
+
     let selectedCourseData = {};
 
     function openPayment(courseName, price) {
@@ -253,10 +291,10 @@
             const result = await response.json();
 
             if (result.success) {
-                alert("পেমেন্ট রিকোয়েস্ট সফলভাবে পাঠানো হয়েছে। ভেরিফাই করে আপনার কোর্সটি শীঘ্রই আনলক করা হবে।");
+                alert("পেমেন্ট রিকোয়েস্ট সফলভাবে পাঠানো হয়েছে। ভেরিফাই করে আপনার কোর্সটি শীঘ্রই আনলক করা হবে।");
                 closeModal();
             } else {
-                alert("সমস্যা হয়েছে! আবার চেষ্টা করুন।");
+                alert("সমস্যা হয়েছে! আবার চেষ্টা করুন।");
             }
         } catch (error) {
             console.error("Error:", error);
