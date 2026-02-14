@@ -12,39 +12,47 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
+// Database Connection
 mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("🔥 ডাটাবেজ কানেক্ট হয়েছে সফলভাবে!"))
-    .catch(err => console.error("❌ ডাটাবেজ এরর:", err.message));
+    .then(() => console.log("🔥 Database Connected!"))
+    .catch(err => console.error("❌ DB Error:", err.message));
 
+// User Schema with Name
 const userSchema = new mongoose.Schema({
+    name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true }
 });
 const User = mongoose.model('User', userSchema);
 
+// Nodemailer Setup
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
         user: process.env.EMAIL_USER, 
-        pass: process.env.EMAIL_PASS  
+        pass: process.env.EMAIL_PASS // Use Google App Password
     }
 });
 
+// Registration Route
 app.post('/register', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { name, email, password } = req.body;
+        if (!name || !email || !password) return res.status(400).json({ error: "All fields required!" });
+        
         const userExists = await User.findOne({ email });
         if (userExists) return res.status(400).json({ error: "Email already exists!" });
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = new User({ email, password: hashedPassword });
+        const newUser = new User({ name, email, password: hashedPassword });
         await newUser.save();
-        res.status(201).json({ message: "Registration Successful!" });
+        res.status(201).json({ success: true, message: "Registration Successful!" });
     } catch (err) {
-        res.status(500).json({ error: "Server error" });
+        res.status(500).json({ error: "Server error during registration" });
     }
 });
 
+// Login Route
 app.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -54,32 +62,31 @@ app.post('/login', async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ error: "Wrong Password!" });
 
-        const token = jwt.sign(
-            { id: user._id }, 
-            process.env.JWT_SECRET || 'secret123', 
-            { expiresIn: '30d' } 
-        );
-        res.json({ message: "Login Successful!", token });
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'secret123', { expiresIn: '30d' });
+        
+        // লগইন সফল হলে নাম এবং টোকেন দুইটাই পাঠানো হচ্ছে
+        res.json({ success: true, token, name: user.name });
     } catch (err) {
         res.status(500).json({ error: "Login failed" });
     }
 });
 
+// Payment Route
 app.post('/send-payment', async (req, res) => {
     const { name, email, course, price, method, trxid } = req.body;
 
     const mailOptions = {
         from: process.env.EMAIL_USER,
         to: process.env.EMAIL_USER,
-        subject: `New Enrollment Request: ${course}`,
+        subject: `New Enrollment: ${course}`,
         html: `
-            <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #a855f7;">
-                <h2 style="color: #a855f7;">নতুন কোর্স এনরোলমেন্ট রিকোয়েস্ট</h2>
-                <p><strong>ছাত্রের নাম:</strong> ${name}</p>
-                <p><strong>ইমেইল:</strong> ${email}</p>
-                <p><strong>কোর্স:</strong> ${course}</p>
-                <p><strong>টাকার পরিমাণ:</strong> ${price} BDT</p>
-                <p><strong>পেমেন্ট মেথড:</strong> ${method}</p>
+            <div style="font-family: sans-serif; padding: 20px; border: 2px solid #a855f7; border-radius: 12px;">
+                <h2 style="color: #a855f7;">New Payment Received</h2>
+                <p><strong>Student Name:</strong> ${name}</p>
+                <p><strong>Email:</strong> ${email}</p>
+                <p><strong>Course:</strong> ${course}</p>
+                <p><strong>Amount:</strong> ${price} BDT</p>
+                <p><strong>Method:</strong> ${method}</p>
                 <p><strong>Transaction ID:</strong> ${trxid}</p>
             </div>
         `
@@ -87,12 +94,11 @@ app.post('/send-payment', async (req, res) => {
 
     try {
         await transporter.sendMail(mailOptions);
-        res.status(200).json({ success: true, message: "Request sent successfully!" });
+        res.status(200).json({ success: true });
     } catch (error) {
-        console.error("Email Error:", error);
-        res.status(500).json({ success: false, error: "Failed to send email." });
+        res.status(500).json({ success: false, error: "Failed to send email" });
     }
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 সার্ভার চলছে পোর্ট ${PORT}-এ`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
